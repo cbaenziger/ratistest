@@ -1,0 +1,11 @@
+# Policy for a "flakey" disk to stress performance and recovery
+explorePolicy = "random"
+
+[explorePolicyParam]
+  # for the Filesystem inspector, event will be non-deterministically delayed.
+  # minInterval and maxInterval are bounds for the non-deterministic delays
+  minInterval = "10ms"
+  maxInterval = "300ms"
+
+  # for Filesystem inspectors, you can specify fault-injection probability (0.0-1.0).
+  faultActionProbability = 0.1

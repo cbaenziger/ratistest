@@ -1,0 +1,13 @@
+# huge scrollback buffer
+defscrollback 50000
+
+# no welcome message
+startup_message off
+
+# default windows
+screen -t Server0 0 /home/vagrant/incubator-ratis/ratis-examples/src/main/bin/server.sh n0 --storage ~/test_data/data0 --peers n0:127.0.0.1:6000,n1:127.0.0.1:6001,n2:127.0.0.1:6002
+screen -t Server1 1 /home/vagrant/incubator-ratis/ratis-examples/src/main/bin/server.sh n1 --storage ~/test_data/data1 --peers n0:127.0.0.1:6000,n1:127.0.0.1:6001,n2:127.0.0.1:6002
+screen -t server2 2 /home/vagrant/incubator-ratis/ratis-examples/src/main/bin/server.sh n2 --storage ~/test_data/data2_slowed --peers n0:127.0.0.1:6000,n1:127.0.0.1:6001,n2:127.0.0.1:6002
+
+autodetach on
+detach
