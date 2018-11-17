@@ -106,6 +106,8 @@ EOF
     hdd.ssh.pty = true
     hdd.vm.provision :shell, privileged: false, name: "Run Ratis Servers", inline: <<-EOH
       pkill -u vagrant -f ratis || true
+      # divide 95% of the VM memory in to thirds for the servers
+      export JAVA_OPTS="-Xmx #{(test_memory*0.95)/3}"
       screen -c /vagrant/screenrcs/ratis_screenrc
     EOH
 
