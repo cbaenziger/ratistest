@@ -1,0 +1,13 @@
+# huge scrollback buffer
+defscrollback 50000
+
+# no welcome message
+startup_message off
+
+# default windows
+screen -t Disk0 0 /home/vagrant/namazu/bin/nmz inspectors fs -original-dir /tmp/data0 -mount-point /tmp/data0_slowed/ -autopilot /vagrant/namazu_configs/hdd_config.toml
+screen -t Disk1 0 /home/vagrant/namazu/bin/nmz inspectors fs -original-dir /tmp/data1 -mount-point /tmp/data1_slowed/ -autopilot /vagrant/namazu_configs/hdd_config.toml
+screen -t Disk2 0 /home/vagrant/namazu/bin/nmz inspectors fs -original-dir /tmp/data2 -mount-point /tmp/data2_slowed/ -autopilot /vagrant/namazu_configs/hdd_config.toml
+
+autodetach on
+detach

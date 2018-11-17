@@ -6,6 +6,7 @@
 # See http://www.vagrantup.com/ for info on Vagrant.
 #
 
+# Settings common to all VMs
 common_vm_settings = Proc.new do |vm|
   vm.customize ['modifyvm', :id, '--nictype2', '82543GC']
   vm.customize ['modifyvm', :id, '--largepages', 'on']
@@ -13,6 +14,37 @@ common_vm_settings = Proc.new do |vm|
   vm.customize ['modifyvm', :id, '--vtxvpid', 'on']
   vm.customize ['modifyvm', :id, '--hwvirtex', 'on']
   vm.customize ['modifyvm', :id, '--ioapic', 'on']
+end
+
+test_memory = ENV['TEST_VM_MEM'] || (15 * 1024).to_s
+test_cpus = ENV['TEST_VM_CPUs'] || '5'
+
+# Settings common to all test VMs
+common_test_vm_settings = Proc.new do |testvm|
+  # starting screen wants a tty; for more see https://github.com/hashicorp/vagrant/issues/1673
+  testvm.ssh.pty = true
+  testvm.vm.provision :shell, privileged: false, name: "Run Ratis Servers", inline: <<-EOH
+    pkill -u vagrant -f ratis || true
+    # divide 95% of the VM memory in to thirds for the servers
+    export JAVA_OPTS="-Xmx #{(test_memory.to_i*0.95)/3}"
+    screen -c /vagrant/screenrcs/ratis_screenrc
+  EOH
+  testvm.ssh.pty = false
+
+  # forward the ports to the host
+  testvm.vm.network "forwarded_port", guest: 6000, host: 6000, host_ip: "127.0.0.1", id: "RatisServer1"
+  testvm.vm.network "forwarded_port", guest: 6001, host: 6001, host_ip: "127.0.0.1", id: "RatisServer2"
+  testvm.vm.network "forwarded_port", guest: 6002, host: 6002, host_ip: "127.0.0.1", id: "RatisServer3"
+
+  testvm.vm.box = 'ratistest'
+  testvm.vm.box_url = 'ratistest.box'
+
+  testvm.vm.provider :virtualbox do |vb|
+    vb.gui = false
+    vb.customize ['modifyvm', :id, '--memory', test_memory]
+    vb.customize ['modifyvm', :id, '--cpus', test_cpus]
+    common_vm_settings.call(vb)
+  end
 end
 
 Vagrant.configure('2') do |config|
@@ -80,6 +112,27 @@ Vagrant.configure('2') do |config|
     ratistest.vm.box = 'ubuntu/bionic64'
   end
 
+  # Configure a generic VM with three Ratis servers
+  config.vm.define :ratisservers do |hdd|
+    motd = %{Welcome to the Ratis test VM
+             ========================================
+             This VM provides the following:
+             * screen -x -- this will connect you to a GNU Screen session running all three Ratis daemons
+             * clean-up and restart on your hypervisor with: vagrant up --provision ratisserver
+             ========================================
+            }
+    hdd.vm.provision :shell, privileged: true, name: "Run Namazu Daemon", inline: <<-EOH
+      set -e
+      cat <<EOF >/etc/motd
+#{motd.gsub(/^\s+/, " ").strip}
+EOF
+    EOH
+
+    # normal test VM spin-up steps
+    common_test_vm_settings.call(hdd)
+  end
+
+  # Configure a pathological VM with three Ratis servers running on bad disks
   config.vm.define :ratishddslowdown do |hdd|
     motd = %{Welcome to the Ratis flakey disk test VM
              ========================================
@@ -95,39 +148,21 @@ Vagrant.configure('2') do |config|
       cat <<EOF >/etc/motd
 #{motd.gsub(/^\s+/, " ").strip}
 EOF
-      mkdir -p /tmp/data{0,1,2,2_slowed}
-      chown vagrant /tmp/data{0,1,2,2_slowed}
+      mkdir -p /tmp/data{0,0_slowed,1,1_slowed,2,2_slowed}
+      chown vagrant /tmp/data{0,0_slowed,1,1_slowed,2,2_slowed}
       pkill -u root -f namazu || true
+      fusermount -u /tmp/data0_slowed/ || true
+      fusermount -u /tmp/data1_slowed/ || true
       fusermount -u /tmp/data2_slowed/ || true
-      screen -dmS Namazu /home/vagrant/namazu/bin/nmz inspectors fs -original-dir /tmp/data2 -mount-point /tmp/data2_slowed/ -autopilot /vagrant/hdd_config.toml
     EOH
 
-    # starting screen will want a tty; for more see https://github.com/hashicorp/vagrant/issues/1673
     hdd.ssh.pty = true
-    hdd.vm.provision :shell, privileged: false, name: "Run Ratis Servers", inline: <<-EOH
-      pkill -u vagrant -f ratis || true
-      # divide 95% of the VM memory in to thirds for the servers
-      export JAVA_OPTS="-Xmx #{(test_memory*0.95)/3}"
-      screen -c /vagrant/screenrcs/ratis_screenrc
+    hdd.vm.provision :shell, privileged: true, name: "Run Namazu Daemon", inline: <<-EOH
+      screen -c /vagrant/screenrcs/namazu_screenrc
     EOH
+    hdd.ssh.pty = true
 
-    # forward the ports to the host
-    hdd.vm.network "forwarded_port", guest: 6000, host: 6000, host_ip: "127.0.0.1", id: "RatisServer1"
-    hdd.vm.network "forwarded_port", guest: 6001, host: 6001, host_ip: "127.0.0.1", id: "RatisServer2"
-    hdd.vm.network "forwarded_port", guest: 6002, host: 6002, host_ip: "127.0.0.1", id: "RatisServer3"
-
-    hdd.vm.box = 'ratistest'
-    hdd.vm.box_url = 'ratistest.box'
-    
-    test_memory = ENV['TEST_VM_MEM'] || (15 * 1024).to_s
-    test_cpus = ENV['TEST_VM_CPUs'] || '5'
-   
-    hdd.vm.provider :virtualbox do |vb|
-      vb.gui = false
-      vb.customize ['modifyvm', :id, '--memory', test_memory]
-      vb.customize ['modifyvm', :id, '--cpus', test_cpus]
-      common_vm_settings.call(vb)
-    end
+    # normal test VM spin-up steps
+    common_test_vm_settings.call(hdd)
   end
 end
-
