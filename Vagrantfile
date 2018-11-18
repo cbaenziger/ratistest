@@ -49,7 +49,6 @@ Vagrant.configure('2') do |config|
   config.vm.define :ratistest, primary: true do |ratistest|
     # setup a local Maven settings.xml if available
     if File.exist?(File.expand_path('~/.m2/settings.xml'))
-      puts "Loading the hypervisor's Maven settings.xml into the test environment"
       config.vm.provision 'shell', privileged: false, inline: <<-EOM.gsub(/^\s+/, ' ').strip
         mkdir -p ~/.m2
       EOM
