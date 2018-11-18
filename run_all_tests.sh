@@ -29,11 +29,11 @@ elif [[ $1 == "clean" ]]; then
   echo "============================================"
   echo "Cleaning-up all test artifacts"
   echo "============================================"
-  vagrant destroy ratistest || true
+  vagrant destroy -f ratistest || true
   for vm in $testvms; do
-    vagrant destroy $vm || true
+    vagrant destroy -f $vm || true
   done
-  vagrant box remove ratistest
+  vagrant box remove ratistest || true
   rm -f $(dirname ${BASH_SOURCE[0]})/ratistest.box
   echo "============================================"
   echo "Clean-up complete"
