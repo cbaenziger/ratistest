@@ -49,7 +49,7 @@ Vagrant.configure('2') do |config|
   config.vm.define :ratistest, primary: true do |ratistest|
     # setup a local Maven settings.xml if available
     if File.exist?(File.expand_path('~/.m2/settings.xml'))
-      config.vm.provision 'shell', privileged: false, inline: <<-EOM.gsub(/^\s+/, ' ').strip
+      config.vm.provision 'shell', privileged: false, inline: <<-EOM.gsub(/^\s+/, '').strip
         mkdir -p ~/.m2
       EOM
 
@@ -100,6 +100,8 @@ Vagrant.configure('2') do |config|
     ratistest.vm.provision :shell, privileged: false, name: 'Build Ratis', inline: <<-EOH
       set -e
       cd ~/
+      # load proxies or other environment specifics loaded via a Vagrantfile.local or otherwise
+      . /etc/environment
       [ '!' -d incubator-ratis ] && git clone https://github.com/apache/incubator-ratis
       cd incubator-ratis
       mvn package -DskipTests
@@ -128,7 +130,7 @@ Vagrant.configure('2') do |config|
              * clean-up and restart on your hypervisor with: vagrant up --provision ratisserver
              ========================================
             )
-    server.vm.provision :shell, name: 'Update MOTD', inline: <<-EOH.gsub(/^\s+/, ' ').strip
+    server.vm.provision :shell, name: 'Update MOTD', inline: <<-EOH.gsub(/^\s+/, '').strip
       set -e
       cat <<EOF >/etc/motd
       #{motd.gsub(/^\s+/, ' ').strip}
@@ -150,7 +152,7 @@ Vagrant.configure('2') do |config|
              ========================================
             )
 
-    hdd.vm.provision :shell, name: 'Update MOTD', inline: <<-EOH.gsub(/^\s+/, ' ').strip
+    hdd.vm.provision :shell, name: 'Update MOTD', inline: <<-EOH.gsub(/^\s+/, '').strip
       cat <<EOF >/etc/motd
       #{motd.gsub(/^\s+/, ' ').strip}
       EOF
@@ -168,9 +170,9 @@ Vagrant.configure('2') do |config|
 
     hdd.ssh.pty = true
     hdd.vm.provision :shell, name: 'Run Namazu Daemon', inline: <<-EOH
-      screen -c /vagrant/screenrcs/namazu_screenrc
+      screen -c /vagrant/screenrcs/namazu_hdd_screenrc
     EOH
-    hdd.ssh.pty = true
+    hdd.ssh.pty = false
 
     # normal test VM spin-up steps
     common_test_vm_settings.call(hdd)
