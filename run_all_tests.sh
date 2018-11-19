@@ -1,15 +1,17 @@
 #!/bin/bash
 set -e
 
-testvms="ratishddslowdown"
+testvms="ratisservers ratishddslowdown"
+
+box_path=$(dirname ${BASH_SOURCE[0]})/ratistest.box
 
 if [[ $1 == "build" ]]; then
   # build everything
   echo "============================================"
   echo "Building the ratistest VM:"
   echo "============================================"
-  vagrant up ratistest
-  vagrant package ratistest --output $(dirname ${BASH_SOURCE[0]})/ratistest.box
+  vagrant up ratistest --provision
+  [ '!' -e $box_path ] && vagrant package ratistest --output $box_path
   vagrant suspend ratistest
 
   echo "============================================"
@@ -19,7 +21,7 @@ if [[ $1 == "build" ]]; then
     echo "============================================"
     echo "Building test-suite VM: $vm"
     echo "============================================"
-    vagrant up $vm
+    vagrant up $vm --provision
     vagrant suspend $vm 
   done
   echo "============================================"
@@ -34,7 +36,7 @@ elif [[ $1 == "clean" ]]; then
     vagrant destroy -f $vm || true
   done
   vagrant box remove ratistest || true
-  rm -f $(dirname ${BASH_SOURCE[0]})/ratistest.box
+  rm -f $box_path
   echo "============================================"
   echo "Clean-up complete"
   echo "============================================"
