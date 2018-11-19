@@ -25,7 +25,7 @@ common_test_vm_settings = Proc.new do |testvm|
     pkill -u vagrant -f ratis || true
     # divide 95% of the VM memory in to thirds for the servers
     export JAVA_OPTS="-Xmx #{(test_memory.to_i * 0.95) / 3}"
-    screen -c /vagrant/screenrcs/ratis_screenrc
+    script -c 'screen -c /vagrant/screenrcs/ratis_screenrc'
   EOH
   testvm.ssh.pty = false
 
@@ -170,7 +170,7 @@ Vagrant.configure('2') do |config|
 
     hdd.ssh.pty = true
     hdd.vm.provision :shell, name: 'Run Namazu Daemon', inline: <<-EOH
-      screen -c /vagrant/screenrcs/namazu_hdd_screenrc
+      script -c 'screen -c /vagrant/screenrcs/namazu_hdd_screenrc'
     EOH
     hdd.ssh.pty = false
 
