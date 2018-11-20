@@ -25,7 +25,7 @@ common_test_vm_settings = Proc.new do |testvm|
     pkill -u vagrant -f ratis || true
     # divide 95% of the VM memory in to thirds for the servers
     export JAVA_OPTS="-Xmx #{(test_memory.to_i * 0.95) / 3}"
-    script -c 'screen -c /vagrant/screenrcs/ratis_screenrc'
+    script -c "screen -c /vagrant/screenrcs/ratis_$(hostname)_screenrc" /dev/stdout
   EOH
   testvm.ssh.pty = false
 
@@ -46,7 +46,8 @@ common_test_vm_settings = Proc.new do |testvm|
 end
 
 Vagrant.configure('2') do |config|
-  config.vm.define :ratistest, primary: true do |ratistest|
+  config.vm.define :ratisbuild do |ratisbuild|
+    ratisbuild.vm.hostname = "ratis-build"
     # setup a local Maven settings.xml if available
     if File.exist?(File.expand_path('~/.m2/settings.xml'))
       config.vm.provision 'shell', privileged: false, inline: <<-EOM.gsub(/^\s+/, '').strip
@@ -58,7 +59,7 @@ Vagrant.configure('2') do |config|
     end
 
     # install packages
-    ratistest.vm.provision :shell, name: 'Install Packages', inline: <<-EOH
+    ratisbuild.vm.provision :shell, name: 'Install Packages', inline: <<-EOH
       set -e
       # only install Java if we have not before
       if [[ $(dpkg-query -W -f='${Status}' oracle-java8-installer 2>/dev/null | grep -c 'install ok installed') -ne 1 ]]; then
@@ -84,7 +85,7 @@ Vagrant.configure('2') do |config|
     EOH
 
     # download and build Namazu
-    ratistest.vm.provision :shell, privileged: false, name: 'Build Namazu', inline: <<-EOH
+    ratisbuild.vm.provision :shell, privileged: false, name: 'Build Namazu', inline: <<-EOH
       set -e
       cd ~/
       [ '!' -d namazu ] && git clone https://github.com/osrg/namazu
@@ -97,7 +98,7 @@ Vagrant.configure('2') do |config|
     EOH
 
     # download and build Ratis
-    ratistest.vm.provision :shell, privileged: false, name: 'Build Ratis', inline: <<-EOH
+    ratisbuild.vm.provision :shell, privileged: false, name: 'Build Ratis', inline: <<-EOH
       set -e
       cd ~/
       # load proxies or other environment specifics loaded via a Vagrantfile.local or otherwise
@@ -107,22 +108,23 @@ Vagrant.configure('2') do |config|
       mvn package -DskipTests
     EOH
 
-    build_memory = ENV['TEST_VM_MEM'] || (2 * 1024).to_s
-    build_cpus = ENV['TEST_VM_CPUs'] || '1'
+    build_memory = ENV['BUILD_VM_MEM'] || (2 * 1024).to_s
+    build_cpus = ENV['BUILD_VM_CPUs'] || '1'
    
-    ratistest.vm.provider :virtualbox do |vb|
+    ratisbuild.vm.provider :virtualbox do |vb|
       vb.gui = false
-      vb.name = 'ratis-test'
+      vb.name = ratisbuild.vm.hostname
       vb.customize ['modifyvm', :id, '--memory', build_memory]
       vb.customize ['modifyvm', :id, '--cpus', build_cpus]
       common_vm_settings.call(vb)
     end
 
-    ratistest.vm.box = 'ubuntu/bionic64'
+    ratisbuild.vm.box = 'ubuntu/bionic64'
   end
 
   # Configure a generic VM with three Ratis servers
   config.vm.define :ratisservers do |server|
+    server.vm.hostname = "ratis-server"
     motd = %(Welcome to the Ratis test VM
              ========================================
              This VM provides the following:
@@ -139,10 +141,14 @@ Vagrant.configure('2') do |config|
 
     # normal test VM spin-up steps
     common_test_vm_settings.call(server)
+    server.vm.provider :virtualbox do |vb|
+      vb.name = server.vm.hostname
+    end
   end
 
   # Configure a pathological VM with three Ratis servers running on bad disks
   config.vm.define :ratishddslowdown do |hdd|
+    hdd.vm.hostname = "ratis-slowhdd"
     motd = %(Welcome to the Ratis flakey disk test VM
              ========================================
              This VM provides the following:
@@ -170,11 +176,14 @@ Vagrant.configure('2') do |config|
 
     hdd.ssh.pty = true
     hdd.vm.provision :shell, name: 'Run Namazu Daemon', inline: <<-EOH
-      script -c 'screen -c /vagrant/screenrcs/namazu_hdd_screenrc'
+      script -c 'screen -c /vagrant/screenrcs/namazu_hdd_screenrc' /dev/stdout
     EOH
     hdd.ssh.pty = false
 
     # normal test VM spin-up steps
     common_test_vm_settings.call(hdd)
+    hdd.vm.provider :virtualbox do |vb|
+      vb.name = hdd.vm.hostname
+    end
   end
 end

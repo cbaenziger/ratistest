@@ -8,11 +8,11 @@ box_path=$(dirname ${BASH_SOURCE[0]})/ratistest.box
 if [[ $1 == "build" ]]; then
   # build everything
   echo "============================================"
-  echo "Building the ratistest VM:"
+  echo "Building the ratisbuild VM:"
   echo "============================================"
-  vagrant up ratistest --provision
-  [ '!' -e $box_path ] && vagrant package ratistest --output $box_path
-  vagrant suspend ratistest
+  vagrant up ratisbuild --provision
+  vagrant suspend ratisbuild
+  [ '!' -e $box_path ] && vagrant package ratisbuild --output $box_path
 
   echo "============================================"
   echo "Building the test-suite VMs:"
@@ -26,12 +26,15 @@ if [[ $1 == "build" ]]; then
   done
   echo "============================================"
   echo "Build complete"
+  echo "Run vagrant resume <vm name> to start a particular environment"
+  echo "Run vagrant ssh <vm name> to enter a particular environment"
   echo "============================================"
+  vagrant status
 elif [[ $1 == "clean" ]]; then
   echo "============================================"
   echo "Cleaning-up all test artifacts"
   echo "============================================"
-  vagrant destroy -f ratistest || true
+  vagrant destroy -f ratisbuild || true
   for vm in $testvms; do
     vagrant destroy -f $vm || true
   done
