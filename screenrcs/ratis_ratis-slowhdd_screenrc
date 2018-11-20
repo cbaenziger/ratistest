@@ -5,9 +5,9 @@ defscrollback 50000
 startup_message off
 
 # default windows
-screen -t Server0 0 /home/vagrant/incubator-ratis/ratis-examples/src/main/bin/server.sh n0 --storage ~/test_data/data0_slowed --peers n0:127.0.0.1:6000,n1:127.0.0.1:6001,n2:127.0.0.1:6002
-screen -t Server1 1 /home/vagrant/incubator-ratis/ratis-examples/src/main/bin/server.sh n1 --storage ~/test_data/data1_slowed --peers n0:127.0.0.1:6000,n1:127.0.0.1:6001,n2:127.0.0.1:6002
-screen -t server2 2 /home/vagrant/incubator-ratis/ratis-examples/src/main/bin/server.sh n2 --storage ~/test_data/data2_slowed --peers n0:127.0.0.1:6000,n1:127.0.0.1:6001,n2:127.0.0.1:6002
+screen -t Server0 0 /vagrant/screenrcs/start_ratis_server.sh /home/vagrant/test_data/data0_slowed n0 n0:127.0.0.1:6000,n1:127.0.0.1:6001,n2:127.0.0.1:6002
+screen -t Server1 1 /vagrant/screenrcs/start_ratis_server.sh /home/vagrant/test_data/data1_slowed n1 n0:127.0.0.1:6000,n1:127.0.0.1:6001,n2:127.0.0.1:6002
+screen -t Server2 2 /vagrant/screenrcs/start_ratis_server.sh /home/vagrant/test_data/data2_slowed n2 n0:127.0.0.1:6000,n1:127.0.0.1:6001,n2:127.0.0.1:6002
 
 autodetach on
 detach
