@@ -4,7 +4,7 @@ This is a series of scripts for [Vagrant](https://vagrantup.com) to stand-up and
 
 # What is provided?
 
-This provides a multi-host `Vagrantfile` which provides the following VM's:
+This provides a multi-host `Vagrantfile` which provides the following described VM's:
 
 ## `ratistest` VM
 This provides a built version of Ratis with the [Namazu](https://github.com/osrg/namazu) test framework as well
@@ -16,7 +16,8 @@ The test VM's can be reconfigured and all daemons restarted via: `vagrant up --p
 One can login to the VM and read the message-of-the-day for instructions on how to read the daemon logs; all daemons run in screen today.
 
 # How to get started:
-There is a shell script `run_all_tests.sh` which provides the following:
+There is a shell script `run_all_tests.sh` which provides a single entrypoint for building or cleaning up all tests.
+To visualize the flow of building all tests, a BPMN diagram of the intended process flow is: ![Vagrantfile BPMN Flow][Vagrantfile_BPMN]
 
 Run with option `build`:
 * Builds the `ratistest` VM
@@ -29,3 +30,5 @@ Run with option `clean`:
 * Destroys the `ratistest` VM
 * Removes the `ratistest.box` from Vagrant
 * Removes the `ratistest.box` from the local file-system
+
+[Vagrantfile_BPMN]: https://github.com/cbaenziger/ratistest/blob/master/docs/vagrantfile_bpmn.svg "Vagrantfile Steps in BPMN (created with https://demo.bpmn.io)"

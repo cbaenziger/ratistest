@@ -61,6 +61,11 @@ Vagrant.configure('2') do |config|
     # install packages
     ratisbuild.vm.provision :shell, name: 'Install Packages', inline: <<-EOH
       set -e
+      # setup /usr/local/bin for non-packaged software
+      if [[ $(egrep -c 'PATH.*/usr/local/bin' /etc/environment) -eq 0 ]]; then
+        echo 'export PATH=${PATH}:/usr/local/bin' >> /etc/environment
+      fi
+
       # only install Java if we have not before
       if [[ $(dpkg-query -W -f='${Status}' oracle-java8-installer 2>/dev/null | grep -c 'install ok installed') -ne 1 ]]; then
         echo 'debconf shared/accepted-oracle-license-v1-1 select true' | debconf-set-selections
@@ -69,16 +74,15 @@ Vagrant.configure('2') do |config|
         apt-get update
         apt-get -y install oracle-java8-installer oracle-java8-set-default
       fi
-      apt-get install -y git libnetfilter-queue-dev libzmq3-dev
 
-      if [[ $(egrep -c 'PATH.*/usr/local/bin' /etc/environment) -eq 0 ]]; then
-        echo 'export PATH=${PATH}:/usr/local/bin' >> /etc/environment
-      fi
+      # install Maven
       mkdir -p /usr/local
       wget --continue http://apache.mirrors.ionfish.org/maven/maven-3/3.6.0/binaries/apache-maven-3.6.0-bin.tar.gz
       tar -xzf apache-maven-3.6.0-bin.tar.gz -C /usr/local
       [ -L /usr/local/bin/mvn ] || ln -s /usr/local/apache-maven-3.6.0/bin/mvn /usr/local/bin/mvn
 
+      # Namazu Dependencies
+      apt-get install -y git libnetfilter-queue-dev libzmq3-dev
       wget --continue https://dl.google.com/go/go1.11.2.linux-amd64.tar.gz
       tar -xzf go1.11.2.linux-amd64.tar.gz -C /usr/local
       [ -L /usr/local/bin/go ] || ln -s /usr/local/go/bin/go /usr/local/bin/go
@@ -101,7 +105,8 @@ Vagrant.configure('2') do |config|
     ratisbuild.vm.provision :shell, privileged: false, name: 'Build Ratis', inline: <<-EOH
       set -e
       cd ~/
-      # load proxies or other environment specifics loaded via a Vagrantfile.local or otherwise
+      # load proxies or other environment specifics loaded via a Vagrantfile.local
+      # or otherwise into /etc/environment
       . /etc/environment
       [ '!' -d incubator-ratis ] && git clone https://github.com/apache/incubator-ratis
       cd incubator-ratis
